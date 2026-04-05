@@ -4,18 +4,15 @@ FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=vscode
-ARG USER_UID=1000
-ARG USER_GID=1000
 ARG TYPST_VERSION=0.14.2
 
 LABEL org.opencontainers.image.title="Typst Dev Container Base"
 LABEL org.opencontainers.image.description="Base image for VS Code dev containers with Typst preinstalled"
 LABEL org.opencontainers.image.source="https://github.com/paulwetzel/typstcontainer-docker"
-LABEL org.opencontainers.image.licenses="GPL-3.0"
+LABEL org.opencontainers.image.licenses="MIT"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Base packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
@@ -38,14 +35,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for devcontainers
-RUN EXISTING_GROUP="$(getent group "${USER_GID}" | cut -d: -f1 || true)" \
-    && if [ -z "${EXISTING_GROUP}" ]; then \
-         groupadd --gid "${USER_GID}" "${USERNAME}"; \
-       fi \
-    && if ! id -u "${USERNAME}" >/dev/null 2>&1; then \
-         useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}" -s /bin/bash; \
-       fi \
+# Create non-root user without forcing UID/GID
+RUN if ! id -u "${USERNAME}" >/dev/null 2>&1; then \
+        useradd -m -s /bin/bash -U "${USERNAME}"; \
+    fi \
     && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
     && chmod 0440 /etc/sudoers.d/${USERNAME}
 
